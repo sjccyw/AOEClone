@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>春秋戰國：列國爭霸</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- 標題畫面 -->
+<div id="menu" class="overlay">
+  <div class="menu-box">
+    <h1>春秋戰國</h1>
+    <h2>列國爭霸</h2>
+    <p class="tagline">周室衰微，諸侯並起。擇一國而興之，統一天下。</p>
+    <div class="menu-row">
+      <label>選擇國家</label>
+      <div id="faction-list" class="faction-list"></div>
+    </div>
+    <div class="menu-row inline">
+      <label>敵國難度</label>
+      <select id="difficulty">
+        <option value="easy">簡單</option>
+        <option value="normal" selected>普通</option>
+        <option value="hard">困難</option>
+      </select>
+      <label>地圖大小</label>
+      <select id="mapsize">
+        <option value="small">小</option>
+        <option value="medium" selected>中</option>
+        <option value="large">大</option>
+      </select>
+    </div>
+    <button id="start-btn" class="big-btn">開始遊戲</button>
+    <button id="help-btn" class="link-btn">操作說明</button>
+  </div>
+</div>
+
+<!-- 操作說明 -->
+<div id="help" class="overlay hidden">
+  <div class="menu-box help-box">
+    <h2>操作說明</h2>
+    <table class="help-table">
+      <tr><td>左鍵點擊 / 拖曳</td><td>選取單位（按住 Shift 加選、雙擊選取同類）</td></tr>
+      <tr><td>右鍵</td><td>移動、攻擊、採集、建造、修理（依目標而定）</td></tr>
+      <tr><td>W A S D / 方向鍵 / 滑鼠靠邊</td><td>移動視角</td></tr>
+      <tr><td>Q / E 或中鍵拖曳</td><td>旋轉視角</td></tr>
+      <tr><td>滾輪</td><td>縮放</td></tr>
+      <tr><td>H</td><td>跳到都城</td></tr>
+      <tr><td>. （句點）</td><td>選取閒置農民</td></tr>
+      <tr><td>Ctrl + 1~9 / 1~9</td><td>編隊 / 選取編隊</td></tr>
+      <tr><td>A 後點擊</td><td>攻擊移動（沿途攻擊敵人）</td></tr>
+      <tr><td>S</td><td>停止</td></tr>
+      <tr><td>Delete</td><td>刪除所選單位</td></tr>
+      <tr><td>Esc</td><td>取消 / 取消選取</td></tr>
+      <tr><td>空白鍵</td><td>暫停</td></tr>
+      <tr><td>F1</td><td>遊戲說明</td></tr>
+    </table>
+    <h3>玩法概要</h3>
+    <p>以農民採集 <b>糧食、木材、石材、黃金</b>，建造民居增加人口，建造兵營、弓弩坊、馬廄訓練軍隊。累積資源後可從都城<b>進入下一時代</b>，解鎖更強的兵種與學宮科技。摧毀敵國所有建築即可獲勝。</p>
+    <button id="help-close" class="big-btn">返回</button>
+  </div>
+</div>
+
+<!-- 遊戲介面 -->
+<div id="hud" class="hidden">
+  <div id="topbar">
+    <div class="res" id="res-food"><span class="ico">🌾</span><span class="val">0</span><span class="lbl">糧食</span></div>
+    <div class="res" id="res-wood"><span class="ico">🪵</span><span class="val">0</span><span class="lbl">木材</span></div>
+    <div class="res" id="res-stone"><span class="ico">🪨</span><span class="val">0</span><span class="lbl">石材</span></div>
+    <div class="res" id="res-gold"><span class="ico">🪙</span><span class="val">0</span><span class="lbl">黃金</span></div>
+    <div class="res" id="res-pop"><span class="ico">👥</span><span class="val">0/0</span><span class="lbl">人口</span></div>
+    <div class="spacer"></div>
+    <div id="age-label">春秋時代</div>
+    <div id="faction-label"></div>
+    <div id="time-label">00:00</div>
+    <button id="idle-btn" title="選取閒置農民 (.)">閒置農民 <span id="idle-count">0</span></button>
+    <button id="speed-btn" title="遊戲速度">速度 ×1</button>
+    <button id="pause-btn" title="暫停 (空白鍵)">暫停</button>
+    <button id="menu-btn" title="遊戲說明 (F1)">說明</button>
+  </div>
+  <div id="messages"></div>
+  <div id="bottombar">
+    <div id="sel-panel">
+      <div id="sel-empty">未選取任何單位</div>
+      <div id="sel-info" class="hidden">
+        <div id="sel-name"></div>
+        <div id="sel-hpbar"><div id="sel-hpfill"></div><span id="sel-hptext"></span></div>
+        <div id="sel-stats"></div>
+        <div id="sel-progress"></div>
+        <div id="sel-multi"></div>
+      </div>
+    </div>
+    <div id="cmd-panel"></div>
+    <div id="minimap-wrap"><canvas id="minimap" width="220" height="220"></canvas></div>
+  </div>
+  <div id="tooltip" class="hidden"></div>
+</div>
+
+<!-- 結束畫面 -->
+<div id="endscreen" class="overlay hidden">
+  <div class="menu-box">
+    <h1 id="end-title">勝利</h1>
+    <p id="end-text"></p>
+    <button id="restart-btn" class="big-btn">返回主選單</button>
+  </div>
+</div>
+
+<div id="selbox" class="hidden"></div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
